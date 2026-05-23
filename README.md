@@ -2,15 +2,17 @@
 
 **A Bayesian hierarchical analysis of America's largest affordable-housing program**
 
-Housing debates throw around the claim that building Low-Income Housing Tax Credit (LIHTC)
-units pushes local home values and rents up. There's almost no data behind it, so I checked.
-LIHTC is the largest affordable-housing program in the country (about $10.5B/year, 3.7M+ units
-since 1986), which makes it a good place to ask the question: as a county builds more LIHTC
-units, what happens to its home values and rents?
+Housing affordability has become a major political talking point, and the debate usually
+centers on market-rate housing. When affordable housing programs do come up, they tend to be
+criticized with little empirical evidence behind the claim. I wanted to measure the actual
+relationship between the Low-Income Housing Tax Credit (LIHTC) and local housing costs. LIHTC
+is the largest affordable-housing program in the country (about $10.5B/year and 3.7M+ units
+since 1986), which makes it the natural place to ask the question: as a county builds more
+LIHTC units, what happens to its home values and rents?
 
-The short answer is that the effect is local, not national. State coefficients vary so much
-that "the national effect of LIHTC" is the wrong question to ask. After adjusting for inflation
-(CPI-less-shelter) and population growth, I find a small positive association.
+The effect turns out to be local rather than national. State coefficients vary enough that
+"the national effect of LIHTC" is the wrong question to ask. After controlling for population
+growth and deflating prices with CPI-less-shelter, I find a modest positive association.
 
 | Outcome | Association per 1% more LIHTC per capita | 95% HDI |
 |---|---|---|
@@ -29,7 +31,7 @@ allocated (high-demand, high-growth markets) than a price effect of the units th
   on zero (OH, OK), others run well past it (HI, DC, CA, CO).</em>
 </p>
 
-📄 **[Read the full write-up (PDF)](reports/LIHTC_Bayesian_Analysis_Report.pdf)**, completed for ISyE 6420 at Georgia Tech.
+📄 **[Read the full write-up (PDF)](reports/LIHTC_Bayesian_Analysis_Report.pdf)**
 
 ---
 
@@ -131,8 +133,3 @@ LOO/ELPD model comparison, posterior and HDI inference.
 HUD LIHTC Database, Zillow Research (ZHVI, ZORI), Census Bureau Population Estimates, USDA ERS,
 and FRED (St. Louis Fed, series `CUUR0000SA0L2`). Full citations are in the
 [report](reports/LIHTC_Bayesian_Analysis_Report.pdf).
-
----
-
-*Originally completed as the term project for ISyE 6420 (Bayesian Statistics) at Georgia Tech,
-Spring 2026.*
