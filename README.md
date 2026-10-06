@@ -16,19 +16,21 @@ growth and deflating prices with CPI-less-shelter, I find a modest positive asso
 
 | Outcome | Association per 1% more LIHTC per capita | 95% HDI |
 |---|---|---|
-| Home values (ZHVI) | **+0.13%** | [0.09%, 0.17%] |
-| Rents (ZORI) | **+0.32%** | [0.29%, 0.36%] |
+| Home values (ZHVI) | **+0.126%** | [0.081%, 0.167%] |
+| Rents (ZORI) | **+0.375%** | [0.314%, 0.434%] |
 
-I model this with a **Bayesian hierarchical (partial-pooling) regression**: county-level
-intercepts and state-level slopes, so each county borrows strength from its state instead of
-collapsing into one national average. The positive sign is the part worth sitting with. More
-rental supply should lower rents, so the result more likely reflects where credits get
-allocated (high-demand, high-growth markets) than a price effect of the units themselves.
+I model this with a **Bayesian hierarchical (partial-pooling) regression**: county intercepts
+nested in state intercepts, and state-level slopes, so each county borrows strength from its
+own state instead of collapsing into one national average. The positive sign is the part worth
+sitting with. More rental supply should lower rents, so the result more likely reflects where
+credits get allocated (high-demand, high-growth markets) than a price effect of the units
+themselves.
 
 <p align="center">
   <img src="reports/figures/housing_plot_forest.jpg" width="520"><br>
-  <em>Each row is a state's posterior LIHTC slope on home values, 95% HDI. Several states sit
-  on zero (OH, OK), others run well past it (HI, DC, CA, CO).</em>
+  <em>Each row is a state's posterior LIHTC slope on home values, 95% HDI. Utah, Hawaii, and
+  Colorado run highest, 14 states include zero, and Michigan, Ohio, Illinois, and Connecticut
+  are credibly negative.</em>
 </p>
 
 📄 **[Read the full write-up (PDF)](reports/LIHTC_Bayesian_Analysis_Report.pdf)**
@@ -38,19 +40,21 @@ allocated (high-demand, high-growth markets) than a price effect of the units th
 ## What this project demonstrates
 
 **Bayesian / statistical modeling**
-- Hierarchical (partial-pooling) model with county intercepts and **state-varying slopes**,
-  built in **PyMC**.
+- Hierarchical (partial-pooling) model with county intercepts **nested in state intercepts**
+  and **state-varying slopes**, built in **PyMC** in non-centered form.
 - Priors set from the data where it helps. `β0 ~ Normal(12, τ=0.25)` comes from the empirical
   log-price distribution, and a tighter `τ_α` prior stabilizes the sparse rental panel.
-- **MCMC diagnostics** for every parameter: trace plots, R-hat near 1.00, and bulk/tail ESS.
+- **MCMC diagnostics** for every parameter: trace plots, R-hat, and bulk/tail ESS. The
+  non-centered form took the home-value model from 49 of 2,180 parameters with R-hat above
+  1.01 to none, with no divergences.
 - Formal **model comparison via LOO** (leave-one-out cross-validation, ELPD), which picks the
-  inflation-adjusted hierarchical model over the pooled and nominal alternatives.
+  inflation-adjusted nested model over national intercepts, nominal prices, and full pooling.
 - The rental panel is sparse (many counties with only a few years), which is exactly where
   partial pooling and a data-informed prior earn their keep. The model still recovers credible
   county and state effects.
 
 **End-to-end data engineering**
-- Joined **six public datasets** into two clean analysis panels on county **FIPS**:
+- Joined **five public datasets** into two clean analysis panels on county **FIPS**:
   - HUD LIHTC project database (54k+ projects, 1987 to 2023)
   - Zillow Home Value Index (ZHVI) and Observed Rent Index (ZORI), monthly to annual
   - Census Bureau population estimates across three vintages (intercensal 2000 to 2009,
@@ -60,19 +64,25 @@ allocated (high-demand, high-growth markets) than a price effect of the units th
 - Feature engineering: **cumulative** LIHTC units (supply persists across years) scaled
   **per 1,000 residents**, plus real (inflation-deflated) price indices.
 - Documented the data-quality calls. About 21% of LIHTC projects dropped for invalid county
-  FIPS, and ZORI is restricted to counties with 5+ valid years.
+  FIPS, and New Mexico drops out entirely because HUD masks its project locations. The panels
+  cover 11,481 (home values) and 2,516 (rents) county-years.
 
 ---
 
 ## Results at a glance
 
-- **Inflation drives most of the raw signal.** The nominal home-value association (about 0.40%)
-  drops to 0.13% once prices are deflated. LOO strongly prefers the inflation-adjusted model
-  (weight near 0.99).
-- **State heterogeneity is real.** High-cost, high-demand states (HI, CA, CO) show the
-  strongest positive slopes. Several lower-cost states (OH, OK) have 95% credible intervals
-  overlapping zero. A single pooled slope hides all of this.
-- **Rents respond more than home values** (0.32% vs. 0.13%), which fits LIHTC being a rental
+- **Inflation drives most of the raw signal.** The nominal home-value association (0.400%)
+  drops to 0.126% once prices are deflated, and the rent association drops from 0.644% to
+  0.375%. LOO prefers the inflation-adjusted model by 1,674.75 ± 46.06 ELPD for home values.
+- **State heterogeneity is real.** For home values, 32 states are credibly positive, 14
+  include zero, and 4 are credibly negative (Michigan, Ohio, Illinois, Connecticut). Utah,
+  Hawaii, and Colorado show the strongest positive slopes. For rents, 46 states are credibly
+  positive and 4 include zero. A single pooled slope hides all of this.
+- **Intercepts have to pool by state too.** The first version pooled county intercepts toward
+  one national mean while slopes pooled by state, which could let part of a state's price
+  level load onto its slope. Nesting the intercepts in states improved LOO by 121.63 ± 14.52 ELPD (home
+  values) and 104.90 ± 9.98 (rents).
+- **Rents respond more than home values** (0.375% vs. 0.126%), which fits LIHTC being a rental
   program. The positive sign still points to allocation and demand confounding, not a supply
   effect.
 - **Not causal.** This is an observational association. The most likely story is that credits
@@ -90,13 +100,16 @@ allocated (high-demand, high-growth markets) than a price effect of the units th
 │   ├── 02_build_inflation_data.ipynb    # FRED CPI into an annual deflator
 │   ├── 03_build_panels.ipynb            # join LIHTC + Zillow + pop into housing & rental panels
 │   ├── 04_housing_value_models.ipynb    # ZHVI: pooled vs. hierarchical, LOO, diagnostics
-│   └── 05_rental_models.ipynb           # ZORI: same workflow on the sparse rental panel
+│   ├── 05_rental_models.ipynb           # ZORI: same workflow on the sparse rental panel
+│   └── 06_presentation_figures.ipynb    # slide figures from the saved summaries (no sampling)
 ├── data/
 │   ├── raw/                         # source files from HUD, Zillow, Census, FRED
-│   └── processed/                   # analysis-ready panels built by 01 to 03
+│   └── processed/                   # analysis-ready panels built by 01 to 05
 ├── reports/
 │   ├── LIHTC_Bayesian_Analysis_Report.pdf
-│   └── figures/                     # trace, forest, and posterior plots
+│   ├── figures/                     # trace, forest, and posterior plots
+│   │   └── presentation/            # slide figures from 06
+│   └── summaries/                   # posterior summaries written by 04 and 05
 └── requirements.txt
 ```
 
@@ -105,7 +118,7 @@ allocated (high-demand, high-growth markets) than a price effect of the units th
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-jupyter lab            # run notebooks/ 01 to 05 in order
+jupyter lab            # run notebooks/ 01 to 06 in order
 ```
 
 Notebooks read from `data/raw/`, write intermediate panels to `data/processed/`, and save
